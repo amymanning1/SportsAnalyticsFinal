@@ -20,6 +20,7 @@ To summarize here is a list of cleaned data sets merged with roster data for 202
 ```{r, warning=FALSE, include=FALSE}
 library(readr)
 library(dplyr)
+library(ggplot2)
 
 # import data  found on drive https://drive.google.com/drive/u/4/folders/12VyXXT7yJ0jou7gquYyo0OAMvftvo0s1
 ncaa <- read_csv("~/Senior Year/Sports Analytics/Data/2024 NCAA Data.csv")
@@ -81,16 +82,19 @@ master_df <- full_join(ncaa_ut, sec_ut) |>
 ```{r}
 # hitting percentage of players by match
 by_match_df <- master_df |>
-  # select(player_name, player_number,match_id, opponent,evaluation, output_type,winning_attack, epv_in, epv_out, epv_added) |>
+  
   mutate(error = ifelse(evaluation=="Error", 1, 0)) |>
   group_by(player_name, match_id, opponent) |>
-  mutate(attempts = n(),
+  summarize(attempts = n(),
          errors = sum(error, na.rm=T),
          kills = sum(winning_attack, na.rm=T),
-         hitting_pctg = (kills - errors)/attempts) |>
-  select(-winning_attack, -evaluation, -output_type) |> 
-  # Make sure attacker has at least 4 attempts to get a better idea of performance in match
-  filter(attempts >=4) 
+         hitting_pctg = (kills - errors)/attempts,
+         med_epv_added = median(epv_added),
+         mean_epv_added = mean(epv_added),
+         match_date) |>
+  
+  inner_join(select(roster,player_name, height_inches,home_state),by='player_name')
+  
 ```
 
 
@@ -102,16 +106,98 @@ season_df <- master_df |>
   # select(player_name, player_number,match_id, opponent,evaluation, output_type,winning_attack, epv_in, epv_out, epv_added) |>
   mutate(error = ifelse(evaluation=="Error", 1, 0)) |>
   group_by(player_name) |>
-  mutate(attempts = n(),
+  summarize(attempts = n(),
             errors = sum(error, na.rm=T),
             kills = sum(winning_attack, na.rm=T),
-            hitting_pctg = (kills - errors)/attempts) |>
-  select(-winning_attack, -evaluation, -output_type) |> 
-  # Make sure attacker has at least 4 attempts to get a better idea of performance in match
-  filter(attempts >=4) 
-
+            hitting_pctg = (kills - errors)/attempts,
+            med_epv_added = median(epv_added),
+            mean_epv_added = mean(epv_added)) |>
+  inner_join(select(roster,player_name, height_inches,home_state),by='player_name')
+  
 ```
 
 
+# EDA
+
+### Number of Attacks for each Texas Player
+
+```{r}
+master_df |>
+  # filter for games on 9/7/24 and 9/15/24
+  filter(match_date == "2024-09-07" | match_date == "2024-09-15") |>
+  group_by(player_name) |>
+  summarize(n_attacks = n()) |>
+  ggplot() +
+    geom_bar(aes(y = player_name, x = n_attacks), stat = "identity",fill="#CC5500") +
+    labs(y = "Player", x = "Total Attacks", title = "Total Attacks per Player") +
+    theme_minimal()
+
+```
+For the first visualization we looked into the number of plays that were recorded for each Texas player during games that occurred on September 7, 2024 and September 15, 2024. These were games played against University of Miami and Stanford University, respectively. There were 9 athletes recorded as having attack attempts during either of these 2 games. The athlete who had the most attacks in these two games was Madisen Skinner (89) and the athletes with the least attacks who were still swinging were Nya Bunton and Averi Carlson (1).
+
+### Distribution of Hitting Percentages
+
+```{r}
+# plot hitting percentages for each player
+season_df |>
+  filter(attempts >= 4) |>
+  ggplot() +
+    geom_bar(aes(x=hitting_pctg, y=player_name), stat="identity", fill="pink") +
+  labs(y = "Player", x = "Hitting Percentage", title = "Season Hitting Percentage per Player") +
+    theme_minimal()
+```
+
+The athletes with the greatest season hitting percentage are Ayden Ames, Ella Swindle, and Reagan Rutherford. To make more sense of this, we will plot season hitting percentage against attempts.
+
+```{r}
+# Plot season hitting percentage against total attacks
+season_df |>
+  ggplot(aes(x = attempts, y = hitting_pctg, label = player_name), vjust = -0.5) +
+  geom_point(size=6) +
+  geom_label(size=2) +
+  labs(y = "Hitting Percentage", x = "Attempts", title = "Season Attempts vs Hitting Percentage by Player") +
+    theme_minimal()
+```
+As when attempts are greater than 200, the hitting percentage for the team ranges from 0.26 (Jenna Wenaas) to 0.41 (Ayden Ames). Madisen Skinner has the most attempts (637) and a hitting percentage of 0.35.
+
+```{r}
+# Distribution of hitting percentages by match
+by_match_df |>
+  ggplot() +
+    geom_histogram(aes(x=hitting_pctg)) +
+   labs(x = "Hitting Percentage", title = "Distribution of Match Hitting Percentages") +
+    theme_minimal()
+```
+```{r}
+# Distribution of hitting percentages by season
+season_df |>
+  ggplot() +
+    geom_histogram(aes(x=hitting_pctg)) +
+   labs(x = "Hitting Percentage", title = "Distribution of Season Hitting Percentages") +
+    theme_minimal()
+```
+
+The hitting percentage by match follows a relatively normal distribution while the distribution of season hitting percentages does not. 
+
+### Mean EPV added
+```{r}
+# Season Mean EPV Added
+season_df |>
+  ggplot() +
+    geom_bar(aes(x=mean_epv_added, y=player_name), stat="identity") +
+  labs(y = "Player", x = "Mean EPV Added", title = "Season EPV Added per Player") +
+    theme_minimal()
+```
+
+
+```{r}
+# Match Mean EPV Added for Game vs Texas A&M on 2024-10-24
+by_match_df |>
+  filter(match_date=="2024-10-24") |>
+  ggplot() +
+    geom_bar(aes(x=mean_epv_added, y=player_name), stat="identity") +
+  labs(y = "Player", x = "Mean EPV Added", title = "10/24/2024 Match vs TAMU EPV Added per Player") +
+    theme_minimal()
+```
 
 
