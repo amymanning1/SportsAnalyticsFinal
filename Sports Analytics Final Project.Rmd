@@ -57,14 +57,14 @@ ncaa_ut <- filter(ncaa, team=="University of Texas at Austin", skill=="Attack") 
   # Select relevant columns prior to joining data to conserve computing power
   select(player_name, player_number,input_type, output_type, position, match_date, skill, 
          match_id, evaluation, attack_code, start_coordinate_x, end_coordinate_x, 
-         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added)
+         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added, attack_description)
 sec_ut <- filter(sec,team=="University of Texas at Austin", skill=="Attack") |>
   select(player_name, player_number,input_type, output_type, position, match_date, skill, 
          match_id, evaluation, attack_code, start_coordinate_x, end_coordinate_x, 
-         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added)
+         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added, attack_description)
 b12_ut <- filter(b12, team=="University of Texas at Austin", skill=="Attack") |>
   select(player_name, player_number,input_type, output_type, position, match_date, skill, match_id, evaluation, attack_code, start_coordinate_x, end_coordinate_x, 
-         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added)
+         start_coordinate_y, end_coordinate_y, winning_attack, video_time, opponent, epv_in, epv_out, epv_added, attack_description)
   
 ```
 
@@ -201,3 +201,18 @@ by_match_df |>
 ```
 
 
+### Kills by Type of Attack
+```{r}
+master_df |>
+  mutate(kill = ifelse(evaluation=="Winning attack", 1, 0)) |>
+  group_by(attack_description) |> 
+  summarize(efficiency = mean(kill)) |>
+  ggplot() +
+    geom_bar(aes(x=efficiency, y=attack_description), stat="identity") +
+  labs(y = "Attack Description", x = "Attack Efficiency", title = "Efficiency per Attack Type") +
+    theme_minimal()
+
+```
+Efficiency in this context is defined as attacks that have the highest proportion of kills for attempts. The high C has an efficiency of 100% which leads to some uncertainty in this evaluation. However, we see that the slide moving toward the setter as well as the C quick ball have the greatest attack efficiency of nearly 70%. The least efficient attack is when the outside hitter hits a 10 which is a hit from the outside at the ten foot line. This means that for whatever reason, the outside hitter could not take their full approach and had to attack the ball from the 10-foot line.
+
+#
