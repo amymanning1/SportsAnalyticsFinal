@@ -215,4 +215,33 @@ master_df |>
 ```
 Efficiency in this context is defined as attacks that have the highest proportion of kills for attempts. The high C has an efficiency of 100% which leads to some uncertainty in this evaluation. However, we see that the slide moving toward the setter as well as the C quick ball have the greatest attack efficiency of nearly 70%. The least efficient attack is when the outside hitter hits a 10 which is a hit from the outside at the ten foot line. This means that for whatever reason, the outside hitter could not take their full approach and had to attack the ball from the 10-foot line.
 
-#
+# Correlation
+
+```{r}
+# Determine correlation between season hitting percentage and mean expected point value added
+cor(season_df$hitting_pctg, season_df$mean_epv_added)
+# by match
+# Match hitting percentage and mean epv added
+cor(by_match_df$hitting_pctg, by_match_df$mean_epv_added)
+```
+
+EPV added and season hitting percentage have a strong positive correlation with a Pearson Coefficient of 0.713. When looking at the match level, hitting percentage and mean EPV added are highly positively correlated (0.902). 
+
+```{r}
+# Height and Hitting Percentage
+# Match level
+cor(by_match_df$hitting_pctg, by_match_df$height_inches)
+
+# Season Level
+cor(season_df$hitting_pctg, season_df$height_inches)
+```
+Interestingly, there is no correlation between hitting percentage and height on a match level (0.093), however there is a some positive correlation (0.607) on the season level.
+
+```{r}
+# Height and Attempts
+# Match level
+cor(by_match_df$height_inches, by_match_df$attempts)
+# Season level
+cor(season_df$height_inches, season_df$attempts)
+```
+There is almost zero correlation between height and attack attempts at both a season and match level.
