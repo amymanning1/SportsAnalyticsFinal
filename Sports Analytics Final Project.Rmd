@@ -245,3 +245,35 @@ cor(by_match_df$height_inches, by_match_df$attempts)
 cor(season_df$height_inches, season_df$attempts)
 ```
 There is almost zero correlation between height and attack attempts at both a season and match level.
+
+```{r}
+master_df = master_df %>%
+  mutate(kill = ifelse(evaluation == "Winning attack", 1, 0)) %>%
+  filter(position != "unsure")
+cor(master_df$kill, master_df$epv_added)
+l_model = glm(kill ~ height_inches + factor(position), family = binomial, data = master_df)
+summary(l_model)
+confint(l_model)
+```
+
+We also decided to take a look at how specific variables predict whether or not an attack ended in a kill. Since our previous model attempted to predict hitting percentage, we thought a kill model would be a complementary way to measure the significance of our predictors of interest on performance. We used a logistic regression model to do so (since we are now measuring a binary outcome), with predictor variables height and position. We initially intended to include EPV added, but we had issues where the model algorithm did not converge and fitted probabilities numerically 0 or 1 occurred. Because the correlation between EPV added and whether an attack ended in a kill or not was extremely high (0.86), we ultimately decided to leave it out of this complementary model. A summary and confidence intervals for each coefficient are shown above.
+
+```{r}
+library(broom)
+
+l_model_tidy = tidy(l_model)
+library(ggplot2)
+
+l_model_tidy %>%
+  filter(term != "(Intercept)", term != "height_inches") %>%  # only plot positions
+  mutate(term = gsub("factor\\(position\\)", "", term)) %>%   # clean up the labels
+  ggplot(aes(x = term, y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = estimate - 1.96 * std.error,
+                    ymax = estimate + 1.96 * std.error), width = 0.2) +
+  labs(x = "Position", y = "Coefficient Estimate (log-odds)",
+       title = "Effect of Position on Probability of a Kill") +
+  theme_minimal()
+```
+
+Because our model suggests height likely has no effect on whether or not an attack ended in a kill, we chose to visualize the effect of a specific position on a player's attack performance. Above is a plot of the model's position coefficients, which are in reference to the base position (which happens to be middle, as R chooses the reference for a categorical variable alphabetically). The plot also displays 95% confidence intervals for each position coefficient.
