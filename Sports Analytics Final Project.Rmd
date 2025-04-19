@@ -246,6 +246,8 @@ cor(season_df$height_inches, season_df$attempts)
 ```
 There is almost zero correlation between height and attack attempts at both a season and match level.
 
+# Logistic Regression Model
+
 ```{r}
 master_df = master_df %>%
   mutate(kill = ifelse(evaluation == "Winning attack", 1, 0)) %>%
